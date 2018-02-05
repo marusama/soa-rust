@@ -5,7 +5,7 @@ use std::io;
 #[derive(Debug)]
 pub enum MyEtcdError {
     Etcd(etcd::Error),
-    Io(io::Error)
+    Io(io::Error),
 }
 
 impl From<etcd::Error> for MyEtcdError {
