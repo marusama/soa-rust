@@ -20,14 +20,14 @@ fn main() {
     let mut core = Core::new().unwrap();
 
     // check all ventures
-    healthcheck_all_ventures(&mut core, Env::Live, "product_service");
-    healthcheck_all_ventures(&mut core, Env::Live, "image_storage_api");
+    // healthcheck_all_ventures(&mut core, Env::Live, "product_service");
+    // healthcheck_all_ventures(&mut core, Env::Live, "image_storage_api");
     healthcheck_all_ventures(&mut core, Env::Live, "notificator");
-    healthcheck_all_ventures(&mut core, Env::Live, "sellercenter_api");
-    healthcheck_all_ventures(&mut core, Env::Live, "seller_api");
+    // healthcheck_all_ventures(&mut core, Env::Live, "sellercenter_api");
+    // healthcheck_all_ventures(&mut core, Env::Live, "seller_api");
 
     // stop/reset consumers
-    notificator_stop_reset_consumers(&mut core, Env::Staging, Venture::ID, /* reset: */ true);
+    // notificator_stop_reset_consumers(&mut core, Env::Staging, Venture::ID, /* reset: */ true);
 }
 
 fn healthcheck_all_ventures(core: &mut Core, env: Env, service: &str) {
