@@ -27,7 +27,7 @@ fn main() {
     healthcheck_all_ventures(&mut core, Env::Live, "seller_api");
 
     // stop/reset consumers
-    // notificator_stop_reset_consumers(&mut core, Env::Staging, Venture::ID, true);
+    notificator_stop_reset_consumers(&mut core, Env::Staging, Venture::ID, /* reset: */ true);
 }
 
 fn healthcheck_all_ventures(core: &mut Core, env: Env, service: &str) {
