@@ -5,32 +5,60 @@ extern crate tokio_core;
 
 mod myetcd;
 mod enums;
+mod etcds;
 
-use std::io::{self, copy, stdout, Read, Write};
+use std::io::{copy, stdout, Read, Write};
 use std::time::Duration;
-use futures::{Future, Stream};
 use tokio_core::reactor::Core;
 use enums::{Env, Venture};
-use reqwest::header::{ContentType, Headers, UserAgent};
+use etcds::EtcdEndpoint;
+use reqwest::header::ContentType;
 use reqwest::Response;
 
 fn main() {
     let mut core = Core::new().unwrap();
 
-    let service = get_service(&mut core, Env::Live, Venture::SG, "notificator");
+    // check all ventures
+    if true {
+        let env = Env::Staging;
+        let ventures = [
+            Venture::ID,
+            Venture::MY,
+            Venture::PH,
+            Venture::SG,
+            Venture::TH,
+            Venture::VN,
+        ];
+        
+        let service = "notificator";
+        // let service = "product_service";
+        // let service = "image_storage_api";
 
-    healthcheck(&service);
+        for &venture in &ventures {
+            let service = get_service(&mut core, env, venture, service);
+            healthcheck(&service);
+        }
+    }
 
-    let queues = vec![
-        "scapi.Product.createProducts",
-        "scapi.Product.updateProducts",
-        "scapi.Product.updatePrices",
-        "scapi.Product.updateStock",
-        "scapi.Product.updateImageCollection",
-    ];
-    for queue in queues {
-        // notificator_maintenance_queue_v1(&service, queue, false); // stop consumers
-        notificator_maintenance_queue_v1(&service, queue, true); // reset consumers
+    // stop/reset consumers
+    if false {
+        let env = Env::Staging;
+        let venture = Venture::ID;
+        let reset = true; // true - reset, false - stop
+
+        let service = get_service(&mut core, env, venture, "notificator");
+        healthcheck(&service);
+
+        let queues = [
+            "scapi.Product.createProducts",
+            "scapi.Product.updateProducts",
+            "scapi.Product.updatePrices",
+            "scapi.Product.updateStock",
+            "scapi.Product.updateImageCollection",
+        ];
+        for queue in &queues {
+            notificator_maintenance_queue_v1(&service, queue, reset);
+        }
     }
 }
 
@@ -51,7 +79,8 @@ fn healthcheck(service: &Service) {
 fn notificator_maintenance_queue_v1(notificator: &Service, queue: &str, reset: bool) {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(120))
-        .build().unwrap();
+        .build()
+        .unwrap();
     for n in &notificator.nodes {
         let url = n.to_owned() + "/rpc";
 
@@ -104,125 +133,8 @@ fn notificator_maintenance_queue_v1(notificator: &Service, queue: &str, reset: b
     }
 }
 
-fn get_etcds() -> Vec<EtcdEndpoint> {
-    let mut etcds = Vec::new();
-
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::ID,
-        "http://idlzdliveaero1-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::ID,
-        "http://idlzdliveaero2-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::ID,
-        "http://idlzdliveaero3-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::ID,
-        "http://idlzdliveaero4-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::ID,
-        "http://idlzdliveaero5-pub:2379",
-    ));
-
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::MY,
-        "http://sg1n-srv-01096.lzd.io:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::MY,
-        "http://sg1n-srv-01137.lzd.io:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::MY,
-        "http://sg1n-srv-01179.lzd.io:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::MY,
-        "http://sg1n-srv-01221.lzd.io:2379",
-    ));
-
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::PH,
-        "http://phlzdliveaero1-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::PH,
-        "http://phlzdliveaero2-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::PH,
-        "http://phlzdliveaero3-pub:2379",
-    ));
-
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::SG,
-        "http://sglzdliveaero1-pub.sgdc:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::SG,
-        "http://sglzdliveaero2-pub.sgdc:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::SG,
-        "http://sglzdliveaero3-pub.sgdc:2379",
-    ));
-
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::TH,
-        "http://thlzdliveaero1-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::TH,
-        "http://thlzdliveaero2-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::TH,
-        "http://thlzdliveaero3-pub:2379",
-    ));
-
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::VN,
-        "http://vnlzdliveaero4-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::VN,
-        "http://vnlzdliveaero5-pub:2379",
-    ));
-    etcds.push(EtcdEndpoint::new(
-        Env::Live,
-        Venture::VN,
-        "http://vnlzdliveaero6-pub:2379",
-    ));
-
-    etcds
-}
-
 fn get_service(core: &mut Core, env: Env, venture: Venture, name: &str) -> Service {
-    let etcd: Vec<EtcdEndpoint> = get_etcds()
+    let etcd: Vec<EtcdEndpoint> = etcds::get_etcds()
         .into_iter()
         .filter(|x| x.env == env && x.venture == venture)
         .collect();
@@ -239,23 +151,6 @@ fn get_service(core: &mut Core, env: Env, venture: Venture, name: &str) -> Servi
         venture: venture,
         name: name.to_owned(),
         nodes: nodes.unwrap(),
-    }
-}
-
-#[derive(Debug)]
-struct EtcdEndpoint {
-    env: Env,
-    venture: Venture,
-    node: String,
-}
-
-impl EtcdEndpoint {
-    fn new(env: Env, venture: Venture, node: &str) -> EtcdEndpoint {
-        EtcdEndpoint {
-            env: env,
-            venture: venture,
-            node: node.to_owned(),
-        }
     }
 }
 
